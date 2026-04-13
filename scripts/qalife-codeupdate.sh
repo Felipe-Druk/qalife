@@ -1,87 +1,79 @@
 #!/bin/bash
 
 # ==============================================================================
-# VISUAL STUDIO CODE UPDATE SCRIPT (Safe & Robust)
+# QALIFE - VISUAL STUDIO CODE UPDATE SCRIPT (Safe & Robust)
 # ==============================================================================
 # Description: Standardizes VS Code repository and updates the application.
 # Target OS: Kubuntu / Ubuntu / Debian
-# Version: 1.0.0
+# Version: 0.0.1
 # ==============================================================================
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# 1. Resolve absolute paths dynamically (Safe execution under sudo)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CORE_DIR="$(cd "$SCRIPT_DIR/../core" && pwd)"
 
-# Logging functions
-log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+# 2. Bootstrap Logger
+if [[ -f "$CORE_DIR/logger.sh" ]]; then
+    source "$CORE_DIR/logger.sh"
+else
+    echo -e "\033[0;31m[ERROR]\033[0m Missing core/logger.sh. Execution aborted."
+    exit 1
+fi
 
-# 1. Privilege check
+# 3. Privilege check
 if [[ $EUID -ne 0 ]]; then
-   log_error "This script must be run as root (use sudo)."
-   exit 1
+   fatal_error "This script must be run as root (use sudo)."
 fi
-
-log_info "Checking for Visual Studio Code updates..."
-apt-get update -qq
-
-INSTALLED_VER=$(dpkg-query -W -f='${Version}' code 2>/dev/null)
-CANDIDATE_VER=$(apt-cache policy code | grep "Candidate:" | awk '{print $2}')
-
-if [ "$INSTALLED_VER" == "$CANDIDATE_VER" ]; then
-    log_success "Visual Studio Code is already at the latest version ($INSTALLED_VER). ✅"
-    exit 0
-fi
-
-log_info "New version detected: $CANDIDATE_VER (Current: $INSTALLED_VER)"
-apt-get install -y code
-log_success "VS Code has been updated to $CANDIDATE_VER"
 
 log_info "=== Starting Visual Studio Code Update ==="
 
-# 2. Dependency check
-log_info "Checking for required dependencies (curl, gpg)..."
-apt-get update -qq
-apt-get install -y curl gpg apt-transport-https > /dev/null 2>&1
+# 4. Dependency check
+log_info "Verifying required dependencies (curl, gpg, apt-transport-https)..."
+apt-get update -qq >/dev/null 2>&1
+apt-get install -qq -y curl gpg apt-transport-https >/dev/null 2>&1
 
-# 3. Repository & Key Configuration (Safe approach)
-# We use a dedicated keyring and a separate .list file to avoid messing with sources.list
+# 5. Repository & Key Configuration (Safe approach)
 log_info "Configuring Microsoft repository and GPG keys..."
 
-# Download and install the keyring only if it's missing or to refresh it
-curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-archive-keyring.gpg --yes
+# Download and install the keyring safely
+curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-archive-keyring.gpg --yes >/dev/null 2>&1
 
 # Create the source list file
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list
 
-# 4. Update and Upgrade
-log_info "Updating package database..."
-apt-get update -qq
+# 6. Update Package Database
+log_info "Refreshing package database with Microsoft sources..."
+apt-get update -qq >/dev/null 2>&1
 
-# Check if VS Code is already installed
-if dpkg -l | grep -q "^ii  code "; then
-    log_info "Visual Studio Code found. Upgrading to the latest version..."
-else
-    log_info "Visual Studio Code not found. Performing fresh installation..."
+# 7. Version Check
+INSTALLED_VER=$(dpkg-query -W -f='${Version}' code 2>/dev/null || echo "Not Installed")
+CANDIDATE_VER=$(apt-cache policy code | grep "Candidate:" | awk '{print $2}')
+
+if [[ -z "$CANDIDATE_VER" ]]; then
+    fatal_error "Failed to fetch candidate version for VS Code. Repository configuration might be broken."
 fi
 
-# We use 'install' without specific versions to let APT handle the latest stable release
-# This is much safer than uninstalling and reinstalling.
-if apt-get install -y code; then
-    CURRENT_VERSION=$(dpkg-query -W -f='${Version}' code)
-    log_success "Visual Studio Code is now at version: $CURRENT_VERSION"
+if [[ "$INSTALLED_VER" == "$CANDIDATE_VER" ]]; then
+    log_success "Visual Studio Code is already at the latest version ($INSTALLED_VER)."
+    # Proceed to cleanup before exiting cleanly
 else
-    log_error "Installation/Upgrade failed. Please check your internet connection."
-    exit 1
+    if [[ "$INSTALLED_VER" == "Not Installed" ]]; then
+        log_info "Visual Studio Code not found. Performing fresh installation..."
+    else
+        log_info "New version detected: $CANDIDATE_VER (Current: $INSTALLED_VER). Upgrading..."
+    fi
+
+    # 8. Installation/Upgrade
+    if apt-get install -qq -y code >/dev/null 2>&1; then
+        CURRENT_VERSION=$(dpkg-query -W -f='${Version}' code)
+        log_success "Visual Studio Code is now at version: $CURRENT_VERSION"
+    else
+        fatal_error "Installation/Upgrade failed. Please check your internet connection."
+    fi
 fi
 
-# 5. Cleanup
+# 9. Cleanup
 log_info "Cleaning up temporary apt cache..."
-apt-get autoclean -y > /dev/null
+apt-get autoclean -qq -y >/dev/null 2>&1
 
 log_success "=== VS CODE UPDATE COMPLETED SUCCESSFULLY ==="
