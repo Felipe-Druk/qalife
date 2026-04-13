@@ -49,6 +49,14 @@ To install Qalife on your local machine, follow these steps:
    ```bash
    ./install.sh
    ```
+5. Load the new configuration:
+   To use the commands immediately without restarting your terminal, run:
+   ```bash
+   source ~/.zshrc  # For Zsh users
+   source ~/.bashrc # For Bash users
+   ```
+
+
 
 ---
 
