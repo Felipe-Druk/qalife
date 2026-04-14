@@ -34,7 +34,7 @@ To install Qalife on your local machine, follow these steps:
 
 1. Clone the repository to your home directory:
    ```bash
-   git clone [https://github.com/your-username/qalife.git](https://github.com/your-username/qalife.git)
+   git clone [https://github.com/Felipe-Druk/qalife.git](https://github.com/Felipe-Druk/qalife.git)
    ```
 
 2. Navigate to the project directory:
