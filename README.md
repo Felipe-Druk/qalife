@@ -6,21 +6,22 @@
  \___\_\_/   \_\_____|___|_|   |_____|
 ```
 
-# QALIFE V 0.2.0
+# QALIFE V 0.2.1
 
 Qalife is a unified Command Line Interface (CLI) application and security-focused 
 maintenance suite designed for Debian-based Linux distributions (Ubuntu, Kubuntu).
 
-Version 0.2.0 transforms Qalife into a robust native CLI tool, featuring a dynamic 
-loader, shell autocomplete, and an interactive UI with standard and verbose modes.
+Version 0.2.1 is a Quality of Life (QoL) and Developer Experience (DX) update, 
+introducing full lifecycle management commands, UI consistency, and strict code 
+linting pipelines.
 
 ---
 
-## NEW IN v0.2.0
-* Unified CLI: All tools are now executed through the base `qalife` command.
-* Dynamic Autocompletion: Pressing Tab natively suggests available commands in Bash and Zsh.
-* Verbose Mode (-v): Bypass the UI spinners to get raw, deep-level system output for debugging.
-* Contextual Help (-h): Read specific documentation per command (e.g., `qalife devclean -h`).
+## NEW IN v0.2.1
+* Lifecycle Management: Seamlessly update (`qalife up`) or remove (`qalife uninstall`) the suite from anywhere in your system.
+* Unified UI/UX: Installation and update processes now utilize the core animated logger for a consistent, professional feel.
+* Developer Experience (DX): Integrated strict ShellCheck linting via pre-commit hooks to guarantee code robustness (development branch only).
+* Smart Routing: Global flags like `-h` now parse correctly regardless of their position in the argument string.
 
 ---
 
@@ -67,11 +68,16 @@ Qalife follows standard CLI syntax:
 * audit            Scans for exposed ports, UFW status, and SSH root login misconfigurations.
 * full-maintenance Runs sysupdate, codeupdate, clean, and devclean in sequence.
 
+### Lifecycle Commands:
+* up / update      Pulls the latest changes from the repository and safely reinstalls the CLI.
+* uninstall        Completely removes Qalife from the system and cleans terminal rc files.
+
 Example Usage:
 ```bash
 qalife devclean
 qalife -v audit
 qalife sysupdate --help
+qalife up
 ```
 
 ---
@@ -82,6 +88,7 @@ Qalife follows the principle of least privilege:
 - Core loaders and UI elements are stored in `~/.qalife/core`.
 - Executable shell scripts are dynamically resolved from `~/.qalife/scripts`.
 - Global flags seamlessly pass through the `sudo` barrier without polluting user env variables.
+- Repository origin path is securely cached to allow seamless global updates.
 - Strict header and linting rules guarantee code robustness.
 
 ---
