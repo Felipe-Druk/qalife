@@ -1,0 +1,3 @@
+# Local dev tools
+.git/hooks/pre-commit
+dev-setup.sh
