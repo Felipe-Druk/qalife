@@ -1,69 +1,71 @@
 #!/bin/bash
 
 # ==============================================================================
-# QALIFE - AUTO INSTALLER & CONFIGURATOR
+# QALIFE - INSTALLATION SCRIPT (Safe & Robust)
 # ==============================================================================
-# Description: Safely installs Qalife tools into the user's environment.
+# Description: Deploys Qalife to user home directory and configures shell rc.
+# Version: 0.2.1-dev
 # ==============================================================================
 
-set -e # Exit immediately if a command exits with a non-zero status
-
-INSTALL_DIR="$HOME/.qalife"
-SCRIPTS_DIR="$INSTALL_DIR/scripts"
-CORE_DIR="$INSTALL_DIR/core"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SHELL_CONFIGS=("$HOME/.zshrc" "$HOME/.bashrc")
-
-# 1. Bootstrap Logger
-if [[ -f "$REPO_DIR/core/logger.sh" ]]; then
-    source "$REPO_DIR/core/logger.sh"
+# 1. Source local logger
+if [[ -f "./core/logger.sh" ]]; then
+    # shellcheck disable=SC1091
+    source "./core/logger.sh"
 else
-    echo -e "\033[0;31m[ERROR]\033[0m Missing core/logger.sh. Installation aborted."
+    echo -e "\033[0;31m[ERROR]\033[0m Cannot find ./core/logger.sh. Execution aborted."
     exit 1
 fi
 
-log_info "Initializing Qalife installation process..."
 
-# 2. Directory Creation & Permission Hardening
-log_info "Setting up directories with restricted permissions..."
-mkdir -p "$SCRIPTS_DIR"
-mkdir -p "$CORE_DIR"
+if [[ -z "$QALIFE_IS_UPDATING" ]]; then
+    echo -e "${BLUE}"
+    cat << "EOF"
+  ____    _    _      ___ _____ _____ 
+ / __ \  / \  | |    |_ _|  ___| ____|
+| |  | |/ _ \ | |     | || |_  |  _|  
+| |__| / ___ \| |___  | ||  _| | |___ 
+ \___\_\_/   \_\_____|___|_|   |_____|
+EOF
+    echo -e "${NC}"
+    echo -e "${GREEN}Qalife Installer v0.2.1${NC}\n"
+fi
+
+log_info "Starting Qalife installation..."
+
+INSTALL_DIR="$HOME/.qalife"
+trap '[[ -n "$SPINNER_PID" ]] && stop_spinner "Process interrupted."; exit 1' INT
+
+# 2. Backup & Clean old install
+if [[ -d "$INSTALL_DIR" ]]; then
+    start_spinner "Purging previous installation..."
+    rm -rf "$INSTALL_DIR"
+    stop_spinner "Previous installation purged."
+fi
+
+# 3. Copy files and set secure permissions
+start_spinner "Deploying core and scripts to $INSTALL_DIR..."
+mkdir -p "$INSTALL_DIR"
+cp -r core scripts "$INSTALL_DIR/"
 chmod 700 "$INSTALL_DIR"
+chmod 600 "$INSTALL_DIR"/core/*
+chmod 700 "$INSTALL_DIR"/scripts/*
+stop_spinner "Files successfully copied and secured."
 
-# 3. Copy Assets
-log_info "Copying executable scripts and core files..."
-cp "$REPO_DIR/scripts/"*.sh "$SCRIPTS_DIR/" 2>/dev/null || true
-cp "$REPO_DIR/core/"*.sh "$CORE_DIR/" 2>/dev/null || true
+# 4. Configure terminal RC files
+start_spinner "Configuring terminal RC files..."
+INIT_BLOCK="\n# QALIFE CLI INITIALIZER\nif [[ -f \"$INSTALL_DIR/core/init.sh\" ]]; then\n    source \"$INSTALL_DIR/core/init.sh\"\nfi\n"
 
-# Secure execution permissions
-chmod 700 "$SCRIPTS_DIR/"*.sh
-chmod 600 "$CORE_DIR/"*.sh # Core files only need read access, not execution
-
-# 4. Minimal Shell Loader
-QALIFE_LOADER="
-# --- Qalife Initialization ---
-export QALIFE_HOME=\"\$HOME/.qalife\"
-[[ -s \"\$QALIFE_HOME/core/init.sh\" ]] && source \"\$QALIFE_HOME/core/init.sh\"
-# -----------------------------"
-
-# 5. Injecting into User Profile
-log_info "Configuring shell environments with dynamic loader..."
-for config_file in "${SHELL_CONFIGS[@]}"; do
-    if [[ -f "$config_file" ]]; then
+for rc_file in ~/.zshrc ~/.bashrc; do
+    if [[ -f "$rc_file" ]]; then
+        # Clean old entries safely
+        sed -i '/# QALIFE CLI INITIALIZER/d' "$rc_file" 2>/dev/null || true
+        sed -i '/qalife\/core\/init\.sh/d' "$rc_file" 2>/dev/null || true
         
-        # 5a. Clean up the old, bloated Qalife block from previous versions
-        if grep -q "# --- Qalife Tools ---" "$config_file"; then
-            log_info "Migrating old Qalife configuration in $(basename "$config_file")..."
-            cp "$config_file" "${config_file}.bak"
-            sed -i '/# --- Qalife Tools ---/,/# --- End Qalife Tools ---/d' "$config_file"
-        fi
-
-        # 5b. Inject the new dynamic loader if it doesn't exist
-        if ! grep -q "# --- Qalife Initialization ---" "$config_file"; then
-            echo "$QALIFE_LOADER" >> "$config_file"
-            log_success "Successfully linked dynamic loader in $(basename "$config_file")."
-        else
-            log_success "Dynamic loader already present in $(basename "$config_file")."
-        fi
+        # Append new dynamic entry
+        echo -e "$INIT_BLOCK" >> "$rc_file"
     fi
 done
+stop_spinner "Shell environments configured."
+
+log_success "Qalife successfully installed!"
+log_info "Please run 'source ~/.zshrc' or 'source ~/.bashrc' to reload your terminal."
