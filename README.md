@@ -6,11 +6,11 @@
  \___\_\_/   \_\_____|___|_|   |_____|
 ```
 
-# QALIFE V 0.0.1
+# QALIFE V 0.1.0
 
 Qalife is a collection of high-performance, lightweight, and security-focused 
-bash scripts designed to automate system maintenance on Debian-based Linux 
-distributions (Ubuntu, Kubuntu, Debian, etc.).
+bash scripts designed to automate system maintenance and auditing on Debian-based 
+Linux distributions (Ubuntu, Kubuntu, Debian, etc.).
 
 This project aims to provide a "Quality of Life" improvement for Linux users 
 while maintaining strict security standards and minimal system overhead.
@@ -21,6 +21,8 @@ while maintaining strict security standards and minimal system overhead.
 
 * System Optimization: Safe removal of orphaned packages and log rotation.
 * App Management: Standardized Visual Studio Code updates.
+* Security Auditing: Fast detection of exposed ports and vulnerable configurations.
+* Developer Cleanup: Deep purging of Python, Node.js, Go, and Docker caches.
 * Security First: Restricted file permissions and privilege validation.
 * Automation: Single-command full system maintenance.
 
@@ -49,6 +51,7 @@ To install Qalife on your local machine, follow these steps:
    ```bash
    ./install.sh
    ```
+
 5. Load the new configuration:
    To use the commands immediately without restarting your terminal, run:
    ```bash
@@ -56,19 +59,18 @@ To install Qalife on your local machine, follow these steps:
    source ~/.bashrc # For Bash users
    ```
 
-
-
 ---
 
 ## USAGE
 
-Once installed, you can run the following commands from any terminal:
+Once installed, Qalife dynamically loads its commands. You can run:
 
 * qalife-clean: Cleans system cache, logs, and orphaned dependencies.
 * qalife-update-code: Updates Visual Studio Code to the latest stable version.
 * qalife-sysupdate: Performs a full system update and repository refresh.
-* qalife-full-maintenance: Executes all the above tasks in sequence.
-* qalife-audit: Scans the system for security misconfigurations and exposed ports.
+* qalife-audit: Scans the system for common security misconfigurations and open ports.
+* qalife-devclean: Safely purges dev caches (pip, __pycache__, npm, docker) and reports freed space.
+* qalife-full-maintenance: Executes sysupdate, codeupdate, clean, and devclean in sequence.
 
 ---
 
@@ -77,7 +79,7 @@ Once installed, you can run the following commands from any terminal:
 Qalife follows the principle of least privilege:
 - Core files are stored in ~/.qalife/core with 600 permissions.
 - Executable scripts are stored in ~/.qalife/scripts with 700 permissions.
-- All scripts require root privileges (sudo) to perform system-level changes.
+- All system-level scripts require root privileges (sudo) to perform changes safely.
 
 ---
 
