@@ -6,31 +6,25 @@
  \___\_\_/   \_\_____|___|_|   |_____|
 ```
 
-# QALIFE V 0.1.0
+# QALIFE V 0.2.0
 
-Qalife is a collection of high-performance, lightweight, and security-focused 
-bash scripts designed to automate system maintenance and auditing on Debian-based 
-Linux distributions (Ubuntu, Kubuntu, Debian, etc.).
+Qalife is a unified Command Line Interface (CLI) application and security-focused 
+maintenance suite designed for Debian-based Linux distributions (Ubuntu, Kubuntu).
 
-This project aims to provide a "Quality of Life" improvement for Linux users 
-while maintaining strict security standards and minimal system overhead.
+Version 0.2.0 transforms Qalife into a robust native CLI tool, featuring a dynamic 
+loader, shell autocomplete, and an interactive UI with standard and verbose modes.
 
 ---
 
-## MAIN FEATURES
-
-* System Optimization: Safe removal of orphaned packages and log rotation.
-* App Management: Standardized Visual Studio Code updates.
-* Security Auditing: Fast detection of exposed ports and vulnerable configurations.
-* Developer Cleanup: Deep purging of Python, Node.js, Go, and Docker caches.
-* Security First: Restricted file permissions and privilege validation.
-* Automation: Single-command full system maintenance.
+## NEW IN v0.2.0
+* Unified CLI: All tools are now executed through the base `qalife` command.
+* Dynamic Autocompletion: Pressing Tab natively suggests available commands in Bash and Zsh.
+* Verbose Mode (-v): Bypass the UI spinners to get raw, deep-level system output for debugging.
+* Contextual Help (-h): Read specific documentation per command (e.g., `qalife devclean -h`).
 
 ---
 
 ## INSTALLATION
-
-To install Qalife on your local machine, follow these steps:
 
 1. Clone the repository to your home directory:
    ```bash
@@ -42,18 +36,13 @@ To install Qalife on your local machine, follow these steps:
    cd qalife
    ```
 
-3. Grant execution permissions to the installer:
+3. Grant execution permissions and run the safe installer:
    ```bash
    chmod +x install.sh
-   ```
-
-4. Run the installer:
-   ```bash
    ./install.sh
    ```
 
-5. Load the new configuration:
-   To use the commands immediately without restarting your terminal, run:
+4. Load the new configuration (or restart your terminal):
    ```bash
    source ~/.zshrc  # For Zsh users
    source ~/.bashrc # For Bash users
@@ -61,25 +50,39 @@ To install Qalife on your local machine, follow these steps:
 
 ---
 
-## USAGE
+## USAGE & SYNTAX
 
-Once installed, Qalife dynamically loads its commands. You can run:
+Qalife follows standard CLI syntax:
+`qalife [flags] <command>`
 
-* qalife-clean: Cleans system cache, logs, and orphaned dependencies.
-* qalife-update-code: Updates Visual Studio Code to the latest stable version.
-* qalife-sysupdate: Performs a full system update and repository refresh.
-* qalife-audit: Scans the system for common security misconfigurations and open ports.
-* qalife-devclean: Safely purges dev caches (pip, __pycache__, npm, docker) and reports freed space.
-* qalife-full-maintenance: Executes sysupdate, codeupdate, clean, and devclean in sequence.
+### Available Flags:
+  -v, --verbose    Outputs raw dependency and system logs instead of the UI spinner.
+  -h, --help       Displays the manual or context-specific help for a command.
+
+### Core Commands:
+* sysupdate        Safely updates apt package lists and runs dist-upgrade.
+* clean            Removes orphaned packages, clears apt cache, and rotates logs.
+* codeupdate       Updates Visual Studio Code and its Microsoft GPG repositories.
+* devclean         Purges dev caches (Python, Node.js, Go, Rust, C++, Docker) to free up space.
+* audit            Scans for exposed ports, UFW status, and SSH root login misconfigurations.
+* full-maintenance Runs sysupdate, codeupdate, clean, and devclean in sequence.
+
+Example Usage:
+```bash
+qalife devclean
+qalife -v audit
+qalife sysupdate --help
+```
 
 ---
 
-## SECURITY ARCHITECTURE
+## ARCHITECTURE & SECURITY
 
 Qalife follows the principle of least privilege:
-- Core files are stored in ~/.qalife/core with 600 permissions.
-- Executable scripts are stored in ~/.qalife/scripts with 700 permissions.
-- All system-level scripts require root privileges (sudo) to perform changes safely.
+- Core loaders and UI elements are stored in `~/.qalife/core`.
+- Executable shell scripts are dynamically resolved from `~/.qalife/scripts`.
+- Global flags seamlessly pass through the `sudo` barrier without polluting user env variables.
+- Strict header and linting rules guarantee code robustness.
 
 ---
 
