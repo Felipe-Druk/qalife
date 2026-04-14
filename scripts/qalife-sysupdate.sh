@@ -4,14 +4,12 @@
 # QALIFE - SYSTEM UPDATE SCRIPT (Safe & Robust)
 # ==============================================================================
 # Description: Automated update & multiverse enabler for Debian/Ubuntu systems.
-# Version: 0.0.1
+# Version: 0.1.0
 # ==============================================================================
 
-# 1. Resolve absolute paths dynamically (Safe execution under sudo)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CORE_DIR="$(cd "$SCRIPT_DIR/../core" && pwd)"
 
-# 2. Bootstrap Logger
 if [[ -f "$CORE_DIR/logger.sh" ]]; then
     source "$CORE_DIR/logger.sh"
 else
@@ -19,50 +17,47 @@ else
     exit 1
 fi
 
-# 3. Privilege check
 if [[ $EUID -ne 0 ]]; then
    fatal_error "This script must be run as root (use sudo)."
 fi
 
+trap 'stop_spinner "Process interrupted."; exit 1' INT
+
 log_info "=== Starting System Update ==="
 
-# 4. Add Multiverse Repository (Safely)
+start_spinner "Verifying multiverse repository..."
 if command -v add-apt-repository >/dev/null 2>&1; then
-    log_info "Ensuring multiverse repository is enabled..."
     add-apt-repository -y multiverse >/dev/null 2>&1
 else
-    log_info "Adding multiverse manually to sources..."
-    # Check if it already exists before adding to avoid duplicates
     grep -q "multiverse" /etc/apt/sources.list || echo "deb http://archive.ubuntu.com/ubuntu $(lsb_release -cs) multiverse" >> /etc/apt/sources.list
 fi
+stop_spinner "Repositories verified."
 
-# 5. Update Package Lists
-log_info "Updating package database..."
+start_spinner "Updating package database..."
 if apt-get update -qq >/dev/null 2>&1; then
-    log_success "Database updated successfully."
+    stop_spinner "Database updated."
 else
+    stop_spinner "Failed."
     fatal_error "Failed to update package database. Check your internet connection."
 fi
 
-# 6. Check for Available Updates
-log_info "Checking for available updates..."
-# Dist-upgrade simulation to capture all changes securely
 UPGRADABLE=$(apt-get -s dist-upgrade | grep -oP '^\d+(?=\s+upgraded)' || echo 0)
 
 if [[ "$UPGRADABLE" -eq 0 ]]; then
-    log_success "Your system is already up to date. No packages to upgrade."
+    log_success "System is already up to date. No packages to upgrade."
 else
-    log_info "Found $UPGRADABLE package(s) to update. Starting process..."
+    start_spinner "Upgrading $UPGRADABLE package(s). This may take a while..."
     if apt-get dist-upgrade -qq -y >/dev/null 2>&1; then
-        log_success "Packages upgraded successfully."
+        stop_spinner "Packages upgraded successfully."
     else
+        stop_spinner "Failed."
         fatal_error "System upgrade encountered an error."
     fi
 fi
 
-# 7. Post-Upgrade Cleanup
-log_info "Removing obsolete packages and clearing cache..."
+start_spinner "Performing post-upgrade cleanup..."
 apt-get autoremove --purge -qq -y >/dev/null 2>&1
 apt-get autoclean -qq -y >/dev/null 2>&1
+stop_spinner "Cleanup finished."
 
 log_success "=== SYSTEM UPDATE COMPLETED SUCCESSFULLY ==="
