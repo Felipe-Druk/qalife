@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # ==============================================================================
-# QALIFE - CLI MANUAL
+# QALIFE - CLI MANUAL (v0.2.0-dev)
 # ==============================================================================
 
-# ANSI Color Codes
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
@@ -20,22 +19,22 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 
-echo -e "${GREEN}Qalife CLI v0.1.0${NC} - System Maintenance & Security Suite\n"
+echo -e "${GREEN}Qalife Unified CLI${NC}\n"
 
 echo -e "${YELLOW}USAGE:${NC}"
-echo -e "  qalife-<command> [options]\n"
+echo -e "  qalife [flags] <command> [arguments]\n"
 
-echo -e "${YELLOW}CORE COMMANDS:${NC}"
-echo -e "  ${GREEN}qalife-help${NC}             Displays this manual."
-echo -e "  ${GREEN}qalife-full-maintenance${NC} Runs system update, code update, clean, and dev clean in sequence.\n"
+echo -e "${YELLOW}FLAGS:${NC}"
+echo -e "  -v, --verbose    Enable detailed output (debug mode)."
+echo -e "  -h, --help       Show this help message.\n"
 
-echo -e "${YELLOW}MAINTENANCE:${NC}"
-echo -e "  ${GREEN}qalife-sysupdate${NC}        Safely updates apt package lists and runs dist-upgrade."
-echo -e "  ${GREEN}qalife-clean${NC}            Removes orphaned packages, clears apt cache, and rotates logs."
-echo -e "  ${GREEN}qalife-codeupdate${NC}       Updates Visual Studio Code and its Microsoft GPG repositories."
-echo -e "  ${GREEN}qalife-devclean${NC}         Purges Python, Node.js, Go, and Docker caches to free up space.\n"
+echo -e "${YELLOW}COMMANDS:${NC}"
+echo -e "  help             Displays this manual."
+echo -e "  sysupdate        Updates system repositories and packages."
+echo -e "  clean            Removes system junk and rotates logs."
+echo -e "  codeupdate       Updates Visual Studio Code."
+echo -e "  devclean         Purges development caches (Python, Docker, etc.)."
+echo -e "  audit            Scans system security configuration."
+echo -e "  full-maintenance Runs all maintenance tasks in sequence.\n"
 
-echo -e "${YELLOW}SECURITY:${NC}"
-echo -e "  ${GREEN}qalife-audit${NC}            Scans for exposed ports, UFW status, and SSH root login misconfigurations.\n"
-
-echo "For more details, visit the repository or read the README.md."
+echo "Note: All maintenance and security commands require sudo privileges."
