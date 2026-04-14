@@ -77,4 +77,4 @@ echo -e "  devclean         Purges development caches (Python, Docker, etc.)."
 echo -e "  audit            Scans system security configuration."
 echo -e "  full-maintenance Runs all maintenance tasks in sequence.\n"
 
-echo "Tip: Try running 'qalife <command> -h' for more details on a specific tool."
+echo "Tip: Try running 'qalife <command> -h' for more details on a specific tool."# Test commit
