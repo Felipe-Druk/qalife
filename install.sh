@@ -46,9 +46,14 @@ fi
 start_spinner "Deploying core and scripts to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 cp -r core scripts "$INSTALL_DIR/"
+cp update.sh uninstall.sh "$INSTALL_DIR/" 2>/dev/null || true # Copiamos los scripts de ciclo de vida
 chmod 700 "$INSTALL_DIR"
 chmod 600 "$INSTALL_DIR"/core/*
 chmod 700 "$INSTALL_DIR"/scripts/*
+chmod 700 "$INSTALL_DIR"/update.sh "$INSTALL_DIR"/uninstall.sh 2>/dev/null || true
+
+# Create env.sh with dynamic path
+echo "export QALIFE_REPO_PATH=\"$PWD\"" > "$INSTALL_DIR/core/env.sh"
 stop_spinner "Files successfully copied and secured."
 
 # 4. Configure terminal RC files

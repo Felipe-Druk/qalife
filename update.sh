@@ -4,17 +4,13 @@
 # QALIFE - UPDATER SCRIPT (Safe & Robust)
 # ==============================================================================
 # Description: Pulls latest changes and safely reinstalls the CLI.
-# Version: 0.2.1-dev
+# Version: 0.2.1
 # ==============================================================================
 
-# 1. Source local logger
-if [[ -f "./core/logger.sh" ]]; then
-    # shellcheck disable=SC1091
-    source "./core/logger.sh"
-else
-    echo -e "\033[0;31m[ERROR]\033[0m Cannot find ./core/logger.sh. Execution aborted."
-    exit 1
-fi
+# shellcheck disable=SC1091
+source "$HOME/.qalife/core/logger.sh"
+# shellcheck disable=SC1091
+source "$HOME/.qalife/core/env.sh" 2>/dev/null || true
 
 echo -e "${BLUE}"
 cat << "EOF"
@@ -27,9 +23,14 @@ EOF
 echo -e "${NC}"
 echo -e "${GREEN}Qalife Updater v0.2.1${NC}\n"
 
-log_info "Pulling latest changes from repository..."
+if [[ -z "$QALIFE_REPO_PATH" || ! -d "$QALIFE_REPO_PATH/.git" ]]; then
+    fatal_error "Original repository path not found or invalid. Please run the updater from the cloned directory manually."
+fi
 
-# Pulling current tracked branch safely
+log_info "Navigating to source repository: $QALIFE_REPO_PATH"
+cd "$QALIFE_REPO_PATH" || fatal_error "Could not access repository path."
+
+log_info "Pulling latest changes..."
 if git pull > /dev/null 2>&1; then
     log_success "Repository updated."
     
