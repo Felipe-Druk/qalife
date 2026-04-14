@@ -8,11 +8,9 @@
 # Version: 0.0.1
 # ==============================================================================
 
-# 1. Resolve absolute paths dynamically (Safe execution under sudo)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CORE_DIR="$(cd "$SCRIPT_DIR/../core" && pwd)"
 
-# 2. Bootstrap Logger
 if [[ -f "$CORE_DIR/logger.sh" ]]; then
     source "$CORE_DIR/logger.sh"
 else
@@ -20,32 +18,25 @@ else
     exit 1
 fi
 
-# 3. Privilege check
 if [[ $EUID -ne 0 ]]; then
    fatal_error "This script must be run as root (use sudo)."
 fi
 
+trap 'stop_spinner "Process interrupted."; exit 1' INT
+
 log_info "=== Starting Visual Studio Code Update ==="
 
-# 4. Dependency check
-log_info "Verifying required dependencies (curl, gpg, apt-transport-https)..."
+start_spinner "Verifying dependencies and GPG keys..."
 apt-get update -qq >/dev/null 2>&1
 apt-get install -qq -y curl gpg apt-transport-https >/dev/null 2>&1
-
-# 5. Repository & Key Configuration (Safe approach)
-log_info "Configuring Microsoft repository and GPG keys..."
-
-# Download and install the keyring safely
 curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-archive-keyring.gpg --yes >/dev/null 2>&1
-
-# Create the source list file
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list
+stop_spinner "Microsoft repositories configured."
 
-# 6. Update Package Database
-log_info "Refreshing package database with Microsoft sources..."
+start_spinner "Fetching latest version data..."
 apt-get update -qq >/dev/null 2>&1
+stop_spinner "Version data fetched."
 
-# 7. Version Check
 INSTALLED_VER=$(dpkg-query -W -f='${Version}' code 2>/dev/null || echo "Not Installed")
 CANDIDATE_VER=$(apt-cache policy code | grep "Candidate:" | awk '{print $2}')
 
@@ -55,25 +46,16 @@ fi
 
 if [[ "$INSTALLED_VER" == "$CANDIDATE_VER" ]]; then
     log_success "Visual Studio Code is already at the latest version ($INSTALLED_VER)."
-    # Proceed to cleanup before exiting cleanly
 else
-    if [[ "$INSTALLED_VER" == "Not Installed" ]]; then
-        log_info "Visual Studio Code not found. Performing fresh installation..."
-    else
-        log_info "New version detected: $CANDIDATE_VER (Current: $INSTALLED_VER). Upgrading..."
-    fi
-
-    # 8. Installation/Upgrade
+    start_spinner "Installing/Upgrading VS Code to $CANDIDATE_VER..."
     if apt-get install -qq -y code >/dev/null 2>&1; then
+        stop_spinner "Upgrade completed."
         CURRENT_VERSION=$(dpkg-query -W -f='${Version}' code)
-        log_success "Visual Studio Code is now at version: $CURRENT_VERSION"
+        log_success "Current version: $CURRENT_VERSION"
     else
-        fatal_error "Installation/Upgrade failed. Please check your internet connection."
+        stop_spinner "Failed."
+        fatal_error "Installation failed. Please check your internet connection."
     fi
 fi
-
-# 9. Cleanup
-log_info "Cleaning up temporary apt cache..."
-apt-get autoclean -qq -y >/dev/null 2>&1
 
 log_success "=== VS CODE UPDATE COMPLETED SUCCESSFULLY ==="
