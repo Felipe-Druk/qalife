@@ -8,7 +8,7 @@
 
 # QALIFE V 0.2.1
 
-Qalife is a unified Command Line Interface (CLI) application and security-focused 
+[Qalife](https://github.com/Felipe-Druk/qalife.git) is a unified Command Line Interface (CLI) application and security-focused 
 maintenance suite designed for Debian-based Linux distributions (Ubuntu, Kubuntu).
 
 Version 0.2.1 is a Quality of Life (QoL) and Developer Experience (DX) update, 
