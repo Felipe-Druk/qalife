@@ -68,6 +68,7 @@ Once installed, you can run the following commands from any terminal:
 * qalife-update-code: Updates Visual Studio Code to the latest stable version.
 * qalife-sysupdate: Performs a full system update and repository refresh.
 * qalife-full-maintenance: Executes all the above tasks in sequence.
+* qalife-audit: Scans the system for security misconfigurations and exposed ports.
 
 ---
 

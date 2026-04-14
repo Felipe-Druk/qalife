@@ -42,34 +42,40 @@ chmod 600 "$CORE_DIR/"*.sh # Core files only need read access, not execution
 # 4. Shell Configuration Block
 QALIFE_BLOCK="
 # --- Qalife Tools ---
-unalias qalife-clean qalife-update-code qalife-sysupdate qalife-full-maintenance 2>/dev/null || true
+unalias qalife-clean qalife-update-code qalife-sysupdate qalife-full-maintenance qalife-audit 2>/dev/null || true
 
-# Source the logger for the main terminal if needed, or keep it strictly inside scripts
 export QALIFE_HOME=\"$INSTALL_DIR\"
 
 qalife-clean() { sudo \"\$QALIFE_HOME/scripts/qalife-clean.sh\"; }
 qalife-update-code() { sudo \"\$QALIFE_HOME/scripts/qalife-codeupdate.sh\"; }
 qalife-sysupdate() { sudo \"\$QALIFE_HOME/scripts/qalife-sysupdate.sh\"; }
+qalife-audit() { sudo \"\$QALIFE_HOME/scripts/qalife-audit.sh\"; }
 
 qalife-full-maintenance() {
     qalife-sysupdate
     qalife-update-code
     qalife-clean
 }
-# --------------------
-"
+# --- End Qalife Tools ---"
+
 
 # 5. Injecting into User Profile
 log_info "Configuring shell environments..."
 for config_file in "${SHELL_CONFIGS[@]}"; do
     if [[ -f "$config_file" ]]; then
         if grep -q "# --- Qalife Tools ---" "$config_file"; then
-            log_warn "Qalife is already configured in $(basename "$config_file"). Skipping injection."
-        else
-            echo "$QALIFE_BLOCK" >> "$config_file"
-            log_success "Successfully injected configuration into $(basename "$config_file")."
+            log_info "Updating existing Qalife configuration in $(basename "$config_file")..."
+            
+            # 5a. Create a safety backup
+            cp "$config_file" "${config_file}.bak"
+            
+            # 5b. Safely purge the old block (handles both old and new end markers)
+            sed -i '/# --- Qalife Tools ---/,/# --------------------/d' "$config_file"
+            sed -i '/# --- Qalife Tools ---/,/# --- End Qalife Tools ---/d' "$config_file"
         fi
+        
+        # 5c. Append the fresh configuration
+        echo "$QALIFE_BLOCK" >> "$config_file"
+        log_success "Successfully injected configuration into $(basename "$config_file")."
     fi
 done
-
-log_success "Installation complete. Please restart your terminal or run: source ~/.zshrc (or ~/.bashrc)"
