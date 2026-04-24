@@ -4,7 +4,7 @@
 # QALIFE - CLI MANUAL (Safe & Robust)
 # ==============================================================================
 # Description: Interactive help manual for the Qalife CLI.
-# Version: 0.2.0
+# Version: 0.3.0
 # ==============================================================================
 
 readonly GREEN='\033[0;32m'
@@ -36,9 +36,24 @@ if [[ -n "$1" ]]; then
             echo "Description: Scans for exposed ports, UFW status, and SSH root login misconfigurations."
             echo "Usage: qalife audit [-v, --verbose]"
             ;;
+        "config")
+            echo "Description: Manages Qalife settings and dynamic command groups (routines)."
+            echo "Usage: qalife config <group> <action> [item]"
+            echo "Actions: list, add, remove"
+            echo "Example: qalife config quick-scan add audit"
+            ;;
+        "up"|"update")
+            echo "Description: Pulls the latest changes from the repository and safely reinstalls the CLI."
+            echo "Usage: qalife up"
+            ;;
+        "uninstall")
+            echo "Description: Completely removes Qalife from the system and cleans terminal rc files."
+            echo "Usage: qalife uninstall"
+            ;;
         "full-maintenance")
-            echo "Description: Runs sysupdate, codeupdate, clean, and devclean in sequence."
+            echo "Description: Dynamic routine. Runs system and dev maintenance tasks in sequence."
             echo "Usage: qalife full-maintenance [-v, --verbose]"
+            echo "Note: You can modify this routine using 'qalife config full-maintenance'."
             ;;
         *)
             echo -e "\033[0;31m[ERROR]\033[0m No specific documentation found for '$1'."
@@ -59,7 +74,7 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 
-echo -e "${GREEN}Qalife Unified CLI v0.2.0${NC} - System Maintenance & Security Suite\n"
+echo -e "${GREEN}Qalife Unified CLI v0.3.0-dev${NC} - System Maintenance & Security Suite\n"
 
 echo -e "${YELLOW}USAGE:${NC}"
 echo -e "  qalife [flags] <command> [arguments]\n"
@@ -68,13 +83,17 @@ echo -e "${YELLOW}FLAGS:${NC}"
 echo -e "  -v, --verbose    Enable detailed raw output."
 echo -e "  -h, --help       Show this help message or command-specific help.\n"
 
-echo -e "${YELLOW}COMMANDS:${NC}"
-echo -e "  help             Displays this manual."
+echo -e "${YELLOW}CORE COMMANDS:${NC}"
 echo -e "  sysupdate        Updates system repositories and packages."
 echo -e "  clean            Removes system junk and rotates logs."
 echo -e "  codeupdate       Updates Visual Studio Code."
 echo -e "  devclean         Purges development caches (Python, Docker, etc.)."
 echo -e "  audit            Scans system security configuration."
-echo -e "  full-maintenance Runs all maintenance tasks in sequence.\n"
+echo -e "  config           Manages dynamic command groups and settings.\n"
 
-echo "Tip: Try running 'qalife <command> -h' for more details on a specific tool."# Test commit
+echo -e "${YELLOW}ROUTINES & LIFECYCLE:${NC}"
+echo -e "  full-maintenance Dynamic routine managed via config."
+echo -e "  up / update      Updates Qalife CLI to the latest version."
+echo -e "  uninstall        Removes Qalife from your system.\n"
+
+echo "Tip: Try running 'qalife <command> -h' for more details on a specific tool."

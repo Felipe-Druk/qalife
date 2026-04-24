@@ -6,21 +6,21 @@
  \___\_\_/   \_\_____|___|_|   |_____|
 ```
 
-# QALIFE V 0.2.0
+# QALIFE V 0.3.0-dev
 
 Qalife is a unified Command Line Interface (CLI) application and security-focused 
 maintenance suite designed for Debian-based Linux distributions (Ubuntu, Kubuntu).
 
-Version 0.2.0 transforms Qalife into a robust native CLI tool, featuring a dynamic 
-loader, shell autocomplete, and an interactive UI with standard and verbose modes.
+Version 0.3.0 introduces a dynamic configuration engine, allowing users to create, 
+modify, and execute custom command routines on the fly using a robust JSON state manager.
 
 ---
 
-## NEW IN v0.2.0
-* Unified CLI: All tools are now executed through the base `qalife` command.
-* Dynamic Autocompletion: Pressing Tab natively suggests available commands in Bash and Zsh.
-* Verbose Mode (-v): Bypass the UI spinners to get raw, deep-level system output for debugging.
-* Contextual Help (-h): Read specific documentation per command (e.g., `qalife devclean -h`).
+## NEW IN v0.3.0
+* Dynamic Routines: Users can now group multiple scripts into custom routines.
+* Configuration Manager: The new `qalife config` command allows for CRUD operations on command groups via a secure `config.json` file.
+* Smart Autocompletion: The shell dynamically reads your custom routines and suggests them when pressing Tab.
+* `jq` Integration: Uses industry-standard JSON parsing to ensure state integrity.
 
 ---
 
@@ -53,11 +53,15 @@ loader, shell autocomplete, and an interactive UI with standard and verbose mode
 ## USAGE & SYNTAX
 
 Qalife follows standard CLI syntax:
-`qalife [flags] <command>`
+`qalife [flags] <command> [arguments]`
 
 ### Available Flags:
   -v, --verbose    Outputs raw dependency and system logs instead of the UI spinner.
   -h, --help       Displays the manual or context-specific help for a command.
+
+### Configuration & Routines (NEW):
+* config           Manages dynamic routines. Syntax: `qalife config <group> <action> [item]`
+                   Example: `qalife config my-routine add sysupdate`
 
 ### Core Commands:
 * sysupdate        Safely updates apt package lists and runs dist-upgrade.
@@ -65,13 +69,17 @@ Qalife follows standard CLI syntax:
 * codeupdate       Updates Visual Studio Code and its Microsoft GPG repositories.
 * devclean         Purges dev caches (Python, Node.js, Go, Rust, C++, Docker) to free up space.
 * audit            Scans for exposed ports, UFW status, and SSH root login misconfigurations.
-* full-maintenance Runs sysupdate, codeupdate, clean, and devclean in sequence.
+
+### Lifecycle Commands:
+* up / update      Pulls the latest changes from the repository and safely reinstalls the CLI.
+* uninstall        Completely removes Qalife from the system and cleans terminal rc files.
 
 Example Usage:
 ```bash
-qalife devclean
-qalife -v audit
-qalife sysupdate --help
+qalife config full-maintenance remove devclean
+qalife config security-scan add audit
+qalife security-scan
+qalife up
 ```
 
 ---
@@ -79,9 +87,10 @@ qalife sysupdate --help
 ## ARCHITECTURE & SECURITY
 
 Qalife follows the principle of least privilege:
-- Core loaders and UI elements are stored in `~/.qalife/core`.
+- Core loaders, configurations (`config.json`), and UI elements are stored in `~/.qalife/core`.
 - Executable shell scripts are dynamically resolved from `~/.qalife/scripts`.
 - Global flags seamlessly pass through the `sudo` barrier without polluting user env variables.
+- Repository origin path is securely cached to allow seamless global updates.
 - Strict header and linting rules guarantee code robustness.
 
 ---
