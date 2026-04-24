@@ -48,7 +48,7 @@ fi
 # 3. Backup & Clean old install
 if [[ -d "$INSTALL_DIR" ]]; then
     start_spinner "Purging previous installation..."
-    # Salvamos el config.json si existe antes de destruir
+    # Backup config.json if it exists before destroying the directory
     if [[ -f "$INSTALL_DIR/core/config.json" ]]; then
         cp "$INSTALL_DIR/core/config.json" "/tmp/qalife_config_backup.json" 2>/dev/null || true
     fi
@@ -60,9 +60,9 @@ fi
 start_spinner "Deploying core and scripts to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 cp -r core scripts "$INSTALL_DIR/"
-cp update.sh uninstall.sh "$INSTALL_DIR/" 2>/dev/null || true # Copiamos los scripts de ciclo de vida
+cp update.sh uninstall.sh "$INSTALL_DIR/" 2>/dev/null || true
 
-# Restauramos el config anterior o creamos uno nuevo por defecto
+# Restore previous config or create a new default one (WITHOUT codeupdate)
 if [[ -f "/tmp/qalife_config_backup.json" ]]; then
     mv "/tmp/qalife_config_backup.json" "$INSTALL_DIR/core/config.json"
 else
@@ -70,7 +70,6 @@ else
 {
   "full-maintenance": [
     "sysupdate",
-    "codeupdate",
     "clean",
     "devclean"
   ]
@@ -89,13 +88,19 @@ stop_spinner "Files successfully copied and secured."
 
 # 5. Configure terminal RC files
 start_spinner "Configuring terminal RC files..."
-INIT_BLOCK="\n# QALIFE CLI INITIALIZER\nif [[ -f \"$INSTALL_DIR/core/init.sh\" ]]; then\n    source \"$INSTALL_DIR/core/init.sh\"\nfi\n"
+BLOCK_START="# === QALIFE CLI START ==="
+BLOCK_END="# === QALIFE CLI END ==="
+INIT_BLOCK="\n$BLOCK_START\nexport QALIFE_HOME=\"\$HOME/.qalife\"\nif [[ -f \"\$QALIFE_HOME/core/init.sh\" ]]; then\n    source \"\$QALIFE_HOME/core/init.sh\"\nfi\n$BLOCK_END\n"
 
 for rc_file in ~/.zshrc ~/.bashrc; do
     if [[ -f "$rc_file" ]]; then
-        # Clean old entries safely
+        # Clean legacy blocks to prevent orphan code
+        sed -i '/# --- Qalife Initialization ---/,/# -----------------------------/d' "$rc_file" 2>/dev/null || true
         sed -i '/# QALIFE CLI INITIALIZER/d' "$rc_file" 2>/dev/null || true
         sed -i '/qalife\/core\/init\.sh/d' "$rc_file" 2>/dev/null || true
+        
+        # Remove current block format safely
+        sed -i "/$BLOCK_START/,/$BLOCK_END/d" "$rc_file" 2>/dev/null || true
         
         # Append new dynamic entry
         echo -e "$INIT_BLOCK" >> "$rc_file"
