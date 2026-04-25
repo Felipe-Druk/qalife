@@ -13,6 +13,24 @@ readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m' # No Color
 
+# Version
+# shellcheck disable=SC2034
+readonly QALIFE_VERSION="0.3.1"
+
+# Qalife Logo
+print_qalife_logo() {
+    echo -e "${BLUE}"
+    cat << "EOF"
+  ____    _    _      ___ _____ _____ 
+ / __ \  / \  | |    |_ _|  ___| ____|
+| |  | |/ _ \ | |     | || |_  |  _|  
+| |__| / ___ \| |___  | ||  _| | |___ 
+ \___\_\_/   \_\_____|___|_|   |_____|
+EOF
+    echo -e "${NC}"
+}
+
+
 # Base Logging functions
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[OK]${NC} $1"; }

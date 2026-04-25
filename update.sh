@@ -4,7 +4,7 @@
 # QALIFE - UPDATER SCRIPT (Safe & Robust)
 # ==============================================================================
 # Description: Pulls latest changes and safely reinstalls the CLI.
-# Version: 0.2.1
+# Version: 0.3.1
 # ==============================================================================
 
 # shellcheck disable=SC1091
@@ -12,16 +12,8 @@ source "$HOME/.qalife/core/logger.sh"
 # shellcheck disable=SC1091
 source "$HOME/.qalife/core/env.sh" 2>/dev/null || true
 
-echo -e "${BLUE}"
-cat << "EOF"
-  ____    _    _      ___ _____ _____ 
- / __ \  / \  | |    |_ _|  ___| ____|
-| |  | |/ _ \ | |     | || |_  |  _|  
-| |__| / ___ \| |___  | ||  _| | |___ 
- \___\_\_/   \_\_____|___|_|   |_____|
-EOF
-echo -e "${NC}"
-echo -e "${GREEN}Qalife Updater v0.2.1${NC}\n"
+print_qalife_logo
+echo -e "${GREEN}Qalife Updater v${QALIFE_VERSION}${NC}\n"
 
 if [[ -z "$QALIFE_REPO_PATH" || ! -d "$QALIFE_REPO_PATH/.git" ]]; then
     fatal_error "Original repository path not found or invalid. Please run the updater from the cloned directory manually."

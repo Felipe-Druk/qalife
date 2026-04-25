@@ -4,7 +4,7 @@
 # QALIFE - DYNAMIC INITIALIZER (Safe & Robust)
 # ==============================================================================
 # Description: Dynamically loads all Qalife scripts, handles flags, and autocomplete.
-# Version: 0.2.0
+# Version: 0.3.0
 # ==============================================================================
 
 export QALIFE_HOME="$HOME/.qalife"
@@ -56,13 +56,7 @@ qalife() {
         target_cmd="help"
     fi
 
-case "$target_cmd" in
-        "full-maintenance")
-            qalife sysupdate
-            qalife codeupdate
-            qalife clean
-            qalife devclean
-            ;;
+    case "$target_cmd" in
         "help")
             local script_path="$QALIFE_HOME/scripts/qalife-help.sh"
             if [[ -f "$script_path" ]]; then
@@ -87,10 +81,36 @@ case "$target_cmd" in
             ;;
         *)
             local script_path="$QALIFE_HOME/scripts/qalife-$target_cmd.sh"
+            local config_file="$QALIFE_HOME/core/config.json"
+            
+            # A. Check if it's a direct script (e.g., clean, sysupdate, config)
             if [[ -f "$script_path" ]]; then
                 sudo QALIFE_VERBOSE="$verbose" "$script_path" "${args[@]}"
+                
+            # B. Check if it's a Command Group inside config.json (e.g., full-maintenance)
+            elif command -v jq >/dev/null 2>&1 && [[ -f "$config_file" ]] && [[ $(jq "has(\"$target_cmd\")" "$config_file") == "true" ]]; then
+                
+                # Load the JSON array into a Bash array securely
+                # shellcheck disable=SC2207
+                local group_cmds=( $(jq -r ".\"$target_cmd\"[]" "$config_file") )
+                
+                if [[ ${#group_cmds[@]} -eq 0 ]]; then
+                    echo -e "\033[0;33m[WARNING]\033[0m Command group '$target_cmd' is empty."
+                    return 0
+                fi
+
+                # Execute each command sequentially, passing the verbose flag if active
+                for cmd in "${group_cmds[@]}"; do
+                    if [[ "$verbose" == "true" ]]; then
+                        qalife -v "$cmd"
+                    else
+                        qalife "$cmd"
+                    fi
+                done
+                
+            # C. Command completely unknown
             else
-                echo -e "\033[0;31m[ERROR]\033[0m Command '$target_cmd' not found."
+                echo -e "\033[0;31m[ERROR]\033[0m Command or group '$target_cmd' not found."
                 echo "Run 'qalife help' for a list of available commands."
                 return 1
             fi
@@ -110,7 +130,7 @@ _qalife_completions() {
         cur="${COMP_WORDS[COMP_CWORD]}"
     fi
 
-    commands="help full-maintenance up update uninstall"
+    commands="help up update uninstall"
     if [[ -d "$QALIFE_HOME/scripts" ]]; then
         for script in "$QALIFE_HOME/scripts/qalife-"*.sh; do
             if [[ -f "$script" ]]; then
@@ -120,6 +140,14 @@ _qalife_completions() {
                 commands+=" $cmd_name"
             fi
         done
+    fi
+
+    # Dynamically load groups from config.json for autocomplete
+    local config_file="$QALIFE_HOME/core/config.json"
+    if command -v jq >/dev/null 2>&1 && [[ -f "$config_file" ]]; then
+        local groups
+        groups=$(jq -r 'keys[]' "$config_file" 2>/dev/null)
+        commands+=" $groups"
     fi
 
     # shellcheck disable=SC2207
