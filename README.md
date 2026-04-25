@@ -6,7 +6,7 @@
  \___\_\_/   \_\_____|___|_|   |_____|
 ```
 
-# QALIFE V 0.3.0-dev
+# QALIFE V 0.3.0
 
 Qalife is a unified Command Line Interface (CLI) application and security-focused 
 maintenance suite designed for Debian-based Linux distributions (Ubuntu, Kubuntu).
@@ -18,8 +18,9 @@ modify, and execute custom command routines on the fly using a robust JSON state
 
 ## NEW IN v0.3.0
 * Dynamic Routines: Users can now group multiple scripts into custom routines.
-* Configuration Manager: The new `qalife config` command allows for CRUD operations on command groups via a secure `config.json` file.
+* Configuration Manager: The new `qalife config` command allows for CRUD operations on command groups and state variables via a secure `config.json` file.
 * Smart Autocompletion: The shell dynamically reads your custom routines and suggests them when pressing Tab.
+* Smart Pruning: `devclean` now supports configurable retention for Docker images to protect recent local builds.
 * `jq` Integration: Uses industry-standard JSON parsing to ensure state integrity.
 
 ---
@@ -60,14 +61,15 @@ Qalife follows standard CLI syntax:
   -h, --help       Displays the manual or context-specific help for a command.
 
 ### Configuration & Routines (NEW):
-* config           Manages dynamic routines. Syntax: `qalife config <group> <action> [item]`
-                   Example: `qalife config my-routine add sysupdate`
+* config           Manages dynamic routines and settings. Syntax: `qalife config <group/key> <action> [item/value]`
+                   Example (Group): `qalife config my-routine add sysupdate`
+                   Example (Value): `qalife config docker-prune-days set 1`
 
 ### Core Commands:
 * sysupdate        Safely updates apt package lists and runs dist-upgrade.
 * clean            Removes orphaned packages, clears apt cache, and rotates logs.
 * codeupdate       Updates Visual Studio Code and its Microsoft GPG repositories.
-* devclean         Purges dev caches (Python, Node.js, Go, Rust, C++, Docker) to free up space.
+* devclean         Purges dev caches (Python, Node.js, Go, Rust, C++, Docker) to free up space. Note: Docker retention is configurable via `config`.
 * audit            Scans for exposed ports, UFW status, and SSH root login misconfigurations.
 
 ### Lifecycle Commands:
@@ -77,6 +79,7 @@ Qalife follows standard CLI syntax:
 Example Usage:
 ```bash
 qalife config full-maintenance remove devclean
+qalife config docker-prune-days set 1
 qalife config security-scan add audit
 qalife security-scan
 qalife up

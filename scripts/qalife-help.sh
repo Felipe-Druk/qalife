@@ -31,16 +31,19 @@ if [[ -n "$1" ]]; then
         "devclean")
             echo "Description: Purges dev caches (Python, Node.js, Go, Rust, C++, Docker) to free space."
             echo "Usage: qalife devclean [-v, --verbose]"
+            echo "Note: Docker cleanup retention is configurable. Run 'qalife config docker-prune-days set <days>'."
             ;;
         "audit")
             echo "Description: Scans for exposed ports, UFW status, and SSH root login misconfigurations."
             echo "Usage: qalife audit [-v, --verbose]"
             ;;
         "config")
-            echo "Description: Manages Qalife settings and dynamic command groups (routines)."
-            echo "Usage: qalife config <group> <action> [item]"
-            echo "Actions: list, add, remove"
-            echo "Example: qalife config quick-scan add audit"
+            echo "Description: Manages Qalife settings, dynamic command groups, and variables."
+            echo "Usage: qalife config <group/key> <action> [item/value]"
+            echo "Array Actions: list, add, remove"
+            echo "Value Actions: get, set"
+            echo "Example 1: qalife config quick-scan add audit"
+            echo "Example 2: qalife config docker-prune-days set 1"
             ;;
         "up"|"update")
             echo "Description: Pulls the latest changes from the repository and safely reinstalls the CLI."
@@ -74,7 +77,7 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 
-echo -e "${GREEN}Qalife Unified CLI v0.3.0-dev${NC} - System Maintenance & Security Suite\n"
+echo -e "${GREEN}Qalife Unified CLI v0.3.0${NC} - System Maintenance & Security Suite\n"
 
 echo -e "${YELLOW}USAGE:${NC}"
 echo -e "  qalife [flags] <command> [arguments]\n"
