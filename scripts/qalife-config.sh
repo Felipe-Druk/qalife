@@ -4,7 +4,7 @@
 # QALIFE - CONFIGURATION MANAGER (Safe & Robust)
 # ==============================================================================
 # Description: Manages Qalife settings and command groups via config.json.
-# Version: 0.3.0-dev
+# Version: 0.3.0
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,20 +34,24 @@ ITEM="$3"
 
 if [[ -z "$TARGET_GROUP" || -z "$ACTION" ]]; then
     log_error "Invalid syntax."
-    echo -e "Usage: qalife config <group> <action> [item]"
-    echo -e "Actions: list, add, remove"
+    echo -e "Usage: qalife config <group/key> <action> [value]"
+    echo -e "Array Actions: list, add, remove"
+    echo -e "Value Actions: get, set"
     exit 1
 fi
 
-# 2. Ensure the group exists (create an empty array if adding to a new group)
+# 2. Ensure the key/group exists
 if [[ $(jq "has(\"$TARGET_GROUP\")" "$CONFIG_FILE") == "false" ]]; then
-    if [[ "$ACTION" == "list" ]]; then
-        log_warn "Group '$TARGET_GROUP' does not exist or is empty."
+    if [[ "$ACTION" == "list" || "$ACTION" == "get" ]]; then
+        log_warn "Key or Group '$TARGET_GROUP' does not exist."
         exit 0
     elif [[ "$ACTION" == "add" ]]; then
         jq ".\"$TARGET_GROUP\" = []" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+    elif [[ "$ACTION" == "set" ]]; then
+        # Dejamos que pase directo para que 'set' cree la clave de tipo string
+        true
     else
-        fatal_error "Group '$TARGET_GROUP' does not exist."
+        fatal_error "Key or Group '$TARGET_GROUP' does not exist."
     fi
 fi
 
@@ -60,27 +64,36 @@ case "$ACTION" in
         
     "add")
         if [[ -z "$ITEM" ]]; then
-            fatal_error "You must specify an item to add. (e.g., qalife config $TARGET_GROUP add audit)"
+            fatal_error "You must specify an item to add."
         fi
-        
-        # Add item and filter through 'unique' to prevent duplicates
         jq ".\"$TARGET_GROUP\" += [\"$ITEM\"] | .\"$TARGET_GROUP\" |= unique" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
         log_success "Added '$ITEM' to $TARGET_GROUP."
         ;;
         
     "remove")
         if [[ -z "$ITEM" ]]; then
-            fatal_error "You must specify an item to remove. (e.g., qalife config $TARGET_GROUP remove clean)"
+            fatal_error "You must specify an item to remove."
         fi
-        
-        # Subtract item array from the target array
         jq ".\"$TARGET_GROUP\" -= [\"$ITEM\"]" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
         log_success "Removed '$ITEM' from $TARGET_GROUP."
         ;;
         
+    "set")
+        if [[ -z "$ITEM" ]]; then
+            fatal_error "You must specify a value to set. (e.g., qalife config docker-prune-days set 1)"
+        fi
+        # Asignamos el valor como un string
+        jq ".\"$TARGET_GROUP\" = \"$ITEM\"" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+        log_success "Set '$TARGET_GROUP' to '$ITEM'."
+        ;;
+        
+    "get")
+        jq -r ".\"$TARGET_GROUP\"" "$CONFIG_FILE"
+        ;;
+        
     *)
         log_error "Unknown action: $ACTION"
-        echo -e "Valid actions are: list, add, remove"
+        echo -e "Valid actions are: list, add, remove, get, set"
         exit 1
         ;;
 esac

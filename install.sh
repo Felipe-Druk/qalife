@@ -26,7 +26,7 @@ if [[ -z "$QALIFE_IS_UPDATING" ]]; then
  \___\_\_/   \_\_____|___|_|   |_____|
 EOF
     echo -e "${NC}"
-    echo -e "${GREEN}Qalife Installer v0.3.0-dev${NC}\n"
+    echo -e "${GREEN}Qalife Installer v0.3.0${NC}\n"
 fi
 
 log_info "Starting Qalife installation..."
@@ -48,7 +48,6 @@ fi
 # 3. Backup & Clean old install
 if [[ -d "$INSTALL_DIR" ]]; then
     start_spinner "Purging previous installation..."
-    # Backup config.json if it exists before destroying the directory
     if [[ -f "$INSTALL_DIR/core/config.json" ]]; then
         cp "$INSTALL_DIR/core/config.json" "/tmp/qalife_config_backup.json" 2>/dev/null || true
     fi
@@ -82,7 +81,6 @@ chmod 600 "$INSTALL_DIR"/core/*
 chmod 700 "$INSTALL_DIR"/scripts/*
 chmod 700 "$INSTALL_DIR"/update.sh "$INSTALL_DIR"/uninstall.sh 2>/dev/null || true
 
-# Create env.sh with dynamic path
 echo "export QALIFE_REPO_PATH=\"$PWD\"" > "$INSTALL_DIR/core/env.sh"
 stop_spinner "Files successfully copied and secured."
 
@@ -94,10 +92,9 @@ INIT_BLOCK="\n$BLOCK_START\nexport QALIFE_HOME=\"\$HOME/.qalife\"\nif [[ -f \"\$
 
 for rc_file in ~/.zshrc ~/.bashrc; do
     if [[ -f "$rc_file" ]]; then
-        # Clean legacy blocks to prevent orphan code
+        # Clean legacy blocks to prevent orphan code properly
         sed -i '/# --- Qalife Initialization ---/,/# -----------------------------/d' "$rc_file" 2>/dev/null || true
-        sed -i '/# QALIFE CLI INITIALIZER/d' "$rc_file" 2>/dev/null || true
-        sed -i '/qalife\/core\/init\.sh/d' "$rc_file" 2>/dev/null || true
+        sed -i '/# QALIFE CLI INITIALIZER/,/fi/d' "$rc_file" 2>/dev/null || true
         
         # Remove current block format safely
         sed -i "/$BLOCK_START/,/$BLOCK_END/d" "$rc_file" 2>/dev/null || true

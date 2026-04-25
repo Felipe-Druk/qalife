@@ -4,13 +4,14 @@
 # QALIFE - DEV ENVIRONMENT CLEANUP SCRIPT (Safe & Robust)
 # ==============================================================================
 # Description: Safely purges dev caches (Python, Node, Go, Docker, C++, Rust).
-# Version: 0.2.1-dev
+# Version: 0.3.0
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CORE_DIR="$(cd "$SCRIPT_DIR/../core" && pwd)"
 
 if [[ -f "$CORE_DIR/logger.sh" ]]; then
+    # shellcheck disable=SC1091
     source "$CORE_DIR/logger.sh"
 else
     echo -e "\033[0;31m[ERROR]\033[0m Missing core/logger.sh. Execution aborted."
@@ -35,7 +36,9 @@ TOTAL_BEFORE=$(df -k / | awk 'NR==2 {print $3}')
 report_tool_space() {
     local tool_name="$1"
     local kb_before="$2"
-    local kb_after=$(df -k / | awk 'NR==2 {print $3}')
+    local kb_after
+    
+    kb_after=$(df -k / | awk 'NR==2 {print $3}')
     local freed=$((kb_before - kb_after))
     
     # Failsafe for OS cache fluctuations
@@ -66,7 +69,7 @@ if [[ "$QALIFE_VERBOSE" == "true" ]]; then
     
     # Dump formatted output
     [[ -s "$TMP_LOG" ]] && sed 's/^/  -> /' "$TMP_LOG" || echo "  -> No files removed."
-    > "$TMP_LOG" # Clear buffer for the next tool
+    true > "$TMP_LOG" # Clear buffer for the next tool
 else
     rm -rf /root/.cache/pip /home/*/.cache/pip 2>/dev/null || true
     find /home/* /root -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
@@ -85,7 +88,7 @@ if [[ "$QALIFE_VERBOSE" == "true" ]]; then
     rm -rfv /home/*/.yarn/cache >> "$TMP_LOG" 2>&1 || true
     stop_spinner "Node.js caches cleared."
     [[ -s "$TMP_LOG" ]] && sed 's/^/  -> /' "$TMP_LOG" || echo "  -> No files removed."
-    > "$TMP_LOG"
+    true > "$TMP_LOG"
 else
     rm -rf /home/*/.npm/_cacache 2>/dev/null || true
     rm -rf /home/*/.yarn/cache 2>/dev/null || true
@@ -102,7 +105,7 @@ if [[ "$QALIFE_VERBOSE" == "true" ]]; then
     rm -rfv /home/*/.cache/go-build > "$TMP_LOG" 2>&1 || true
     stop_spinner "Go build caches cleared."
     [[ -s "$TMP_LOG" ]] && sed 's/^/  -> /' "$TMP_LOG" || echo "  -> No files removed."
-    > "$TMP_LOG"
+    true > "$TMP_LOG"
 else
     rm -rf /home/*/.cache/go-build 2>/dev/null || true
     stop_spinner "Go build caches cleared."
@@ -118,7 +121,7 @@ if [[ "$QALIFE_VERBOSE" == "true" ]]; then
     rm -rfv /home/*/.cache/ccache > "$TMP_LOG" 2>&1 || true
     stop_spinner "C/C++ compiler caches cleared."
     [[ -s "$TMP_LOG" ]] && sed 's/^/  -> /' "$TMP_LOG" || echo "  -> No files removed."
-    > "$TMP_LOG"
+    true > "$TMP_LOG"
 else
     rm -rf /home/*/.cache/ccache 2>/dev/null || true
     stop_spinner "C/C++ compiler caches cleared."
@@ -135,7 +138,7 @@ if [[ "$QALIFE_VERBOSE" == "true" ]]; then
     rm -rfv /home/*/.cargo/git/db >> "$TMP_LOG" 2>&1 || true
     stop_spinner "Rust caches cleared."
     [[ -s "$TMP_LOG" ]] && sed 's/^/  -> /' "$TMP_LOG" || echo "  -> No files removed."
-    > "$TMP_LOG"
+    true > "$TMP_LOG"
 else
     rm -rf /home/*/.cargo/registry/cache 2>/dev/null || true
     rm -rf /home/*/.cargo/git/db 2>/dev/null || true
@@ -144,19 +147,44 @@ fi
 report_tool_space "Rust" "$STEP_BEFORE"
 
 # ------------------------------------------------------------------------------
-# 6. Docker Cleanup
+# 6. Docker Cleanup (Dynamic Config Based)
 # ------------------------------------------------------------------------------
 if command -v docker >/dev/null 2>&1; then
     STEP_BEFORE=$(df -k / | awk 'NR==2 {print $3}')
-    start_spinner "Pruning dangling Docker images and build caches..."
+    
+    # Fetch configuration or default to 0
+    PRUNE_DAYS=0
+    CONFIG_FILE="$CORE_DIR/config.json"
+    if command -v jq >/dev/null 2>&1 && [[ -f "$CONFIG_FILE" ]]; then
+        VAL=$(jq -r '."docker-prune-days" // empty' "$CONFIG_FILE" 2>/dev/null)
+        if [[ -n "$VAL" && "$VAL" =~ ^[0-9]+$ ]]; then
+            PRUNE_DAYS="$VAL"
+        fi
+    fi
+
+    # Build dynamic prune flags
+    if [[ "$PRUNE_DAYS" -eq 0 ]]; then
+        FILTER_ARGS="-a -f"
+        MSG_SUFFIX="(All unused)"
+    else
+        HOURS=$((PRUNE_DAYS * 24))
+        FILTER_ARGS="-a -f --filter until=${HOURS}h"
+        MSG_SUFFIX="(Older than $PRUNE_DAYS days)"
+    fi
+
+    start_spinner "Pruning Docker images and build caches $MSG_SUFFIX..."
     if [[ "$QALIFE_VERBOSE" == "true" ]]; then
-        docker image prune -f > "$TMP_LOG" 2>&1
-        docker builder prune -f >> "$TMP_LOG" 2>&1
+        # shellcheck disable=SC2086
+        docker image prune $FILTER_ARGS > "$TMP_LOG" 2>&1
+        # shellcheck disable=SC2086
+        docker builder prune $FILTER_ARGS >> "$TMP_LOG" 2>&1
         stop_spinner "Docker artifacts pruned safely."
         [[ -s "$TMP_LOG" ]] && sed 's/^/  -> /' "$TMP_LOG" || echo "  -> No files removed."
     else
-        docker image prune -f >/dev/null 2>&1
-        docker builder prune -f >/dev/null 2>&1
+        # shellcheck disable=SC2086
+        docker image prune $FILTER_ARGS >/dev/null 2>&1
+        # shellcheck disable=SC2086
+        docker builder prune $FILTER_ARGS >/dev/null 2>&1
         stop_spinner "Docker artifacts pruned safely."
     fi
     report_tool_space "Docker" "$STEP_BEFORE"
